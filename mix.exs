@@ -27,7 +27,7 @@ defmodule Kazan.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger, :httpoison, :poison, :yaml_elixir]]
+    [applications: [:logger]]
   end
 
   # Specifies which paths to compile per environment.
@@ -45,17 +45,19 @@ defmodule Kazan.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:poison, "~> 2.0 or ~> 3.0 or ~> 4.0"},
-      # Earlier versions of httpoison will cause a process leak when using watchers
-      {:httpoison, ">= 1.6.1"},
-      {:yaml_elixir, "~> 2.0"},
+      # {:poison, "~> 2.0 or ~> 3.0 or ~> 4.0"},
+      # # Earlier versions of httpoison will cause a process leak when using watchers
+      # {:httpoison, ">= 1.6.1"},
+      {:yaml_elixir, "~> 2.11"},
 
       # Dev dependencies
       {:ex_doc, "~> 0.14", only: :dev},
 
       # Test dependencies
-      {:plug_cowboy, "~> 1.0", only: :test},
-      {:bypass, "~> 0.5", only: :test}
+      {:plug_cowboy, "~> 2.0", only: :test},
+      {:bypass, "~> 2.1", only: :test},
+      {:req, "~> 0.5"},
+      {:jason, "~> 1.4"}
     ]
   end
 

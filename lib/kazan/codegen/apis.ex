@@ -24,7 +24,7 @@ defmodule Kazan.Codegen.Apis do
 
     operations =
       File.read!(spec_file)
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> swagger_to_op_map
       |> Map.values()
       |> Enum.flat_map(&duplicate_on_tags/1)

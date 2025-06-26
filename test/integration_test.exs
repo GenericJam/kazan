@@ -245,7 +245,7 @@ defmodule KazanIntegrationTest do
         path: "/apis/example.com/v1/namespaces/#{@namespace}/foos",
         query_params: %{},
         content_type: "application/json",
-        body: Poison.encode!(body),
+        body: Jason.encode!(body),
         response_model: FooResource
       }
       |> Kazan.run!(server: server)

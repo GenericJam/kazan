@@ -179,18 +179,18 @@ defmodule Kazan.Watcher do
   end
 
   @impl GenServer
-  def handle_info(%HTTPoison.AsyncStatus{code: 200}, state) do
+  def handle_info(%{code: 200}, state) do
     {:noreply, state}
   end
 
-  @impl GenServer
-  def handle_info(%HTTPoison.AsyncHeaders{}, state) do
-    {:noreply, state}
-  end
+  # @impl GenServer
+  # def handle_info(%HTTPoison.AsyncHeaders{}, state) do
+  #   {:noreply, state}
+  # end
 
   @impl GenServer
   def handle_info(
-        %HTTPoison.AsyncChunk{chunk: chunk, id: request_id},
+        %{chunk: chunk, id: request_id},
         %State{id: request_id, buffer: buffer} = state
       ) do
     {lines, buffer} =
@@ -209,7 +209,7 @@ defmodule Kazan.Watcher do
 
   @impl GenServer
   def handle_info(
-        %HTTPoison.Error{reason: {:closed, :timeout}},
+        %{reason: {:closed, :timeout}},
         %State{name: name, rv: rv} = state
       ) do
     log(state, "Received Timeout: #{name} rv: #{rv}")
@@ -218,7 +218,7 @@ defmodule Kazan.Watcher do
 
   @impl GenServer
   def handle_info(
-        %HTTPoison.AsyncEnd{id: request_id},
+        %{id: request_id},
         %State{id: request_id, name: name, rv: rv} = state
       ) do
     log(state, "Received AsyncEnd: #{name} rv: #{rv}")
@@ -231,9 +231,7 @@ defmodule Kazan.Watcher do
 
     log(
       state,
-      "#{inspect(self())} - #{name} send_to process #{inspect(pid)} :DOWN reason: #{
-        inspect(reason)
-      }"
+      "#{inspect(self())} - #{name} send_to process #{inspect(pid)} :DOWN reason: #{inspect(reason)}"
     )
 
     {:stop, :normal, state}
@@ -279,7 +277,7 @@ defmodule Kazan.Watcher do
       send_to: send_to
     } = state
 
-    {:ok, %{"type" => type, "object" => raw_object}} = Poison.decode(line)
+    {:ok, %{"type" => type, "object" => raw_object}} = Jason.decode(line)
     {:ok, model} = Kazan.Models.decode(raw_object, nil)
 
     case extract_rv(raw_object) do

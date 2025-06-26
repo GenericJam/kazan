@@ -54,38 +54,27 @@ defmodule Kazan.Client.Imp do
 
     request_options = [params: request.query_params, ssl: ssl_options(server)]
 
-    request_options =
-      case stream_to do
-        nil ->
-          request_options
-
-        pid ->
-          request_options ++
-            [
-              stream_to: pid,
-              recv_timeout: Keyword.get(options, :recv_timeout, 15000)
-            ]
-      end
-
-    res =
-      HTTPoison.request(
-        method(request.method),
-        server.url <> request.path,
-        request.body || "",
-        headers,
-        request_options
-      )
-
     case stream_to do
       nil ->
-        with {:ok, result} <- res,
-             {:ok, body} <- check_status(result),
-             {:ok, content_type} <- get_content_type(result) do
+        res =
+          Req.new(
+            method: method(request.method),
+            url: server.url <> request.path,
+            headers: headers,
+            body: request.body || "",
+            params: request.query_params,
+            connect_options: [
+              transport_opts: [cacerts: ssl_options(server)[:cacerts]]
+            ]
+          )
+          |> Req.request()
+
+        with {:ok, response} <- res,
+             {:ok, body} <- check_status(response),
+             {:ok, content_type} <- get_content_type(response) do
           case content_type do
             "application/json" ->
-              with {:ok, data} <- Poison.decode(body),
-                   {:ok, model} <- decode(data, request.response_model),
-                   do: {:ok, model}
+              decode(body, request.response_model)
 
             "text/plain" ->
               {:ok, body}
@@ -95,10 +84,33 @@ defmodule Kazan.Client.Imp do
           end
         end
 
-      _pid ->
-        case res do
-          {:ok, %HTTPoison.AsyncResponse{id: id}} -> {:ok, id}
-          other -> other
+      pid when is_pid(pid) ->
+        req =
+          Req.new(
+            method: method(request.method),
+            url: server.url <> request.path,
+            headers: headers,
+            body: request.body || "",
+            json: request.query_params,
+            connect_options: [
+              transport_opts: [cacerts: ssl_options(server)[:cacerts]]
+            ],
+            recv_timeout:
+              Keyword.get(
+                options,
+                :recv_timeout,
+                request_options[:recv_timeout] || 15000
+              ),
+            into: fn
+              {:data, data}, req_resp ->
+                send(stream_to, {:data, data})
+                {:cont, req_resp}
+            end
+          )
+          |> Req.request()
+
+        with {:ok, response} <- req do
+          response
         end
     end
   end
@@ -128,33 +140,33 @@ defmodule Kazan.Client.Imp do
     end
   end
 
-  defp method("get"), do: :get
-  defp method("post"), do: :post
-  defp method("put"), do: :put
-  defp method("delete"), do: :delete
-  defp method("patch"), do: :patch
+  @methods ~w"""
+  get post put delete patch
+  """
+  @atom_methods ~w"""
+  get post put delete patch
+  """a
 
-  @spec check_status(HTTPoison.Response.t()) :: {:ok, String.t()}
-  defp check_status(%{status_code: code, body: body}) when code in 200..299 do
+  @method_map Enum.zip(@methods, @atom_methods) |> Map.new()
+
+  defp method(method), do: Map.get(@method_map, method)
+
+  @spec check_status(Req.Response.t()) :: {:ok, String.t()}
+  defp check_status(%{status: code, body: body}) when code in 200..299 do
     {:ok, body}
   end
 
-  defp check_status(%{status_code: other, body: body}) do
-    data =
-      case Poison.decode(body) do
-        {:ok, data} -> data
-        _ -> body
-      end
-
-    {:error, {:http_error, other, data}}
+  defp check_status(%{status: other, body: body}) do
+    {:error, {:http_error, other, body}}
   end
 
-  @spec get_content_type(HTTPoison.Response.t()) ::
+  @spec get_content_type(Req.Response.t()) ::
           {:ok, String.t()} | {:error, :no_content_type}
   defp get_content_type(%{headers: headers}) do
-    case List.keyfind(headers, "Content-Type", 0) do
+    case Map.get(headers, "content-type", 0) do
       nil -> {:error, :no_content_type}
-      {_, content_type} -> {:ok, content_type}
+      [content_type] -> {:ok, content_type}
+      _ -> {:error, :content_type_match_error}
     end
   end
 

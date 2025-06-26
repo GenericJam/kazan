@@ -1,6 +1,6 @@
 # This file is responsible for configuring your application
 # and its dependencies with the aid of the Mix.Config module.
-use Mix.Config
+import Config
 
 # This configuration is loaded before any dependency and is restricted
 # to this project. If another project depends on this project, this
@@ -32,6 +32,8 @@ use Mix.Config
 if Mix.env() == :test do
   config :kazan,
     oai_name_mappings: [{"something.test", Kazan.Something}]
+
+  config :bypass, enable_debug_log: true
 end
 
 if Mix.env() == :dev do
