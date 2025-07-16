@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kazan-test-sa
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kazan-test-role
+rules:
+# Core API permissions needed for tests
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["create", "delete", "get", "list", "patch", "watch"]
+- apiGroups: [""]
+  resources: ["pods", "pods/log", "pods/status"]
+  verbs: ["create", "get", "list", "patch", "delete", "watch"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["list", "watch"]
+# Extensions API for deployments
+- apiGroups: ["extensions"]
+  resources: ["deployments"]
+  verbs: ["list", "get"]
+# Apps API for deployments (newer API)
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["list", "get"]
+# RBAC permissions (needed for one of the tests)
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["clusterroles"]
+  verbs: ["list", "get"]
+# Custom Resource Definitions
+- apiGroups: ["apiextensions.k8s.io"]
+  resources: ["customresourcedefinitions"]
+  verbs: ["create", "delete", "get", "list"]
+# Custom Resources (for the Foo resource in tests) - needs wildcard for dynamic namespaces
+- apiGroups: ["example.com"]
+  resources: ["foos"]
+  verbs: ["create", "get", "list", "delete"]
+  resourceNames: []
+# Allow all operations in any namespace for test isolation
+- apiGroups: [""]
+  resources: ["*"]
+  verbs: ["*"]
+  resourceNames: []
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kazan-test-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kazan-test-role
+subjects:
+- kind: ServiceAccount
+  name: kazan-test-sa
+  namespace: default

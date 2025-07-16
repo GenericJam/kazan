@@ -64,7 +64,7 @@ defmodule Kazan.Codegen.Models do
     definitions =
       spec_file
       |> File.read!()
-      |> Poison.decode!()
+      |> Jason.decode!()
       |> Map.get("definitions")
 
     # First we need to go over all of the definitions and call module_name

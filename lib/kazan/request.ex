@@ -31,7 +31,7 @@ defmodule Kazan.Request do
 
   @op_map Kazan.Config.oai_spec()
           |> File.read!()
-          |> Poison.decode!()
+          |> Jason.decode!()
           |> Kazan.Swagger.swagger_to_op_map()
 
   @doc """
@@ -117,7 +117,7 @@ defmodule Kazan.Request do
       [body_param] ->
         model = params[body_param["name"]]
         {:ok, data} = model.__struct__.encode(model)
-        Poison.encode!(data)
+        Jason.encode!(data)
 
       [] ->
         nil

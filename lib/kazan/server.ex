@@ -245,7 +245,7 @@ defmodule Kazan.Server do
   defp fetch_auth_from_provider(%ProviderAuth{} = auth) do
     with {cmd_response, 0} <-
            System.cmd(auth.config.cmd_path, auth.config.cmd_args),
-         {:ok, data} <- Poison.decode(cmd_response),
+         {:ok, data} <- Jason.decode(cmd_response),
          token when not is_nil(token) <-
            get_in(data, auth.config.token_key_path),
          {:ok, expiry, _} <-

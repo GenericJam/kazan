@@ -54,7 +54,7 @@ defmodule RequestTest do
       assert request.method == "post"
       assert request.path == "/api/v1/namespaces/test/bindings"
       assert request.query_params == %{}
-      assert request.body == Poison.encode!(%{"target" => %{}})
+      assert request.body == Jason.encode!(%{"target" => %{}})
       assert request.content_type == "application/json"
     end
 
@@ -74,7 +74,7 @@ defmodule RequestTest do
       assert request.query_params == %{}
 
       assert request.body ==
-               Poison.encode!(%{"metadata" => %{"name" => "test2"}})
+               Jason.encode!(%{"metadata" => %{"name" => "test2"}})
 
       assert request.content_type == "application/merge-patch+json"
     end

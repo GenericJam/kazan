@@ -5,7 +5,7 @@ defmodule Kazan.Mixfile do
     [
       app: :kazan,
       version: "0.11.0",
-      elixir: "~> 1.4",
+      elixir: "~> 1.12",
       elixirc_paths: elixirc_paths(Mix.env()),
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
@@ -27,8 +27,12 @@ defmodule Kazan.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger, :httpoison, :poison, :yaml_elixir]]
+    [applications: [:logger, :req, :jason, :yaml_elixir]++ extra_applications(Mix.env())
+    ]
   end
+
+  defp extra_applications(:test), do: [:bypass]
+  defp extra_applications(_), do: []
 
   # Specifies which paths to compile per environment.
   defp elixirc_paths(:test), do: ["lib", "test/support"]
@@ -45,17 +49,16 @@ defmodule Kazan.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:poison, "~> 2.0 or ~> 3.0 or ~> 4.0"},
-      # Earlier versions of httpoison will cause a process leak when using watchers
-      {:httpoison, ">= 1.6.1"},
+      {:jason, "~> 1.2"},
+      {:req, "~> 0.5.0"},
       {:yaml_elixir, "~> 2.0"},
 
       # Dev dependencies
-      {:ex_doc, "~> 0.14", only: :dev},
+      {:ex_doc, "~> 0.30", only: :dev},
 
       # Test dependencies
-      {:plug_cowboy, "~> 1.0", only: :test},
-      {:bypass, "~> 0.5", only: :test}
+      {:plug_cowboy, "~> 2.0", only: :test},
+      {:bypass, "~> 2.1", only: :test}
     ]
   end
 
